@@ -7,6 +7,7 @@ import com.example.spring_bot_ai.model.FileDetail;
 import com.example.spring_bot_ai.model.FilteredData;
 import com.example.spring_bot_ai.service.DataService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -75,9 +76,13 @@ public class FileDetailController {
             throw new RuntimeException("Data not found for the given file ID");
         }
     }
-
-    @DeleteMapping("/{fileId}/turnover-data")
-    public void deleteFileAndRelatedData(@PathVariable Long fileId) {
-        dataService.deleteFileAndRelatedData(fileId);
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<Void> deleteFile(@PathVariable Long fileId) {
+        try {
+            dataService.deleteFileById(fileId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
     }
 }

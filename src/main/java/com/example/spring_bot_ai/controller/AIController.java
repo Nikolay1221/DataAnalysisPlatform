@@ -4,6 +4,7 @@ import com.example.spring_bot_ai.model.DataCompanyTurnover;
 import com.example.spring_bot_ai.model.FilteredData;
 import com.example.spring_bot_ai.repository.DataCompanyTurnoverRepository;
 import com.example.spring_bot_ai.repository.FilteredDataRepository;
+import com.example.spring_bot_ai.service.DataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -21,12 +22,15 @@ import java.util.List;
 public class AIController {
 
     @Autowired
+    private DataService dataService;
+
+    @Autowired
     private DataCompanyTurnoverRepository dataCompanyTurnoverRepository;
 
     @Autowired
     private FilteredDataRepository filteredDataRepository;
 
-    private static final String TARGET_URL = "http://80.209.240.170:5000/upload";
+    private static final String TARGET_URL = "http://localhost:5000/upload";
 
     @PostMapping("/predict-sales/{fileId}")
     @Transactional
@@ -35,6 +39,9 @@ public class AIController {
         if (data.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+
+        // Удаление старых данных filtered_data для этого файла
+        filteredDataRepository.deleteByFileDetailId(fileId);
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -52,5 +59,10 @@ public class AIController {
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+    @DeleteMapping("/filtered-data/{fileId}/{id}")
+    public ResponseEntity<Void> deleteFilteredData(@PathVariable Long fileId, @PathVariable Long id) {
+        dataService.deleteFilteredDataByIdAndFileId(id, fileId);
+        return ResponseEntity.noContent().build();
     }
 }

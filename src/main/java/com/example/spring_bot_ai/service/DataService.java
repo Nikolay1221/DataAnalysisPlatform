@@ -5,10 +5,9 @@ import com.example.spring_bot_ai.dto.FileDetailWithDataDTO;
 import com.example.spring_bot_ai.model.DataCompanyTurnover;
 import com.example.spring_bot_ai.model.FileDetail;
 import com.example.spring_bot_ai.model.FilteredData;
-import com.example.spring_bot_ai.repository.DataCompanyTurnoverRepository;
-import com.example.spring_bot_ai.repository.FileDetailRepository;
-import com.example.spring_bot_ai.repository.FilteredDataRepository;
+import com.example.spring_bot_ai.repository.*;
 import com.example.spring_bot_ai.util.CSVHelper;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +17,18 @@ import java.util.stream.Collectors;
 
 @Service
 public class DataService {
+
+    @Autowired
+    private FilteredDataDeletionRepository filteredDataDeletionRepository;
+
+    @Autowired
+    private DataCompanyTurnoverDeletionRepository dataCompanyTurnoverDeletionRepository;
+
+    @Autowired
+    private FileDetailDeletionRepository fileDetailDeletionRepository;
+
+    @Autowired
+    private FilteredDataCustomRepository filteredDataCustomRepository;
 
     @Autowired
     private DataCompanyTurnoverRepository dataCompanyTurnoverRepository;
@@ -100,13 +111,19 @@ public class DataService {
     public List<FilteredData> getGeneratedDataByFileId(Long fileId) {
         return filteredDataRepository.findByFileDetailId(fileId);
     }
+    @Transactional
+    public void deleteFilteredDataByIdAndFileId(Long id, Long fileId) {
+        filteredDataCustomRepository.deleteByIdAndFileDetailId(id, fileId);
+    }
+    @Transactional
+    public void deleteFileById(Long fileId) {
+        // Удаление связанных данных из таблицы filtered_data
+        filteredDataDeletionRepository.deleteByFileDetailId(fileId);
 
-    public void deleteFileAndRelatedData(Long fileId) {
-        List<DataCompanyTurnover> turnoverData = getDataByFileId(fileId);
-        List<FilteredData> generatedData = getGeneratedDataByFileId(fileId);
+        // Удаление связанных данных из таблицы data_company_turnover
+        dataCompanyTurnoverDeletionRepository.deleteByFileDetailId(fileId);
 
-        dataCompanyTurnoverRepository.deleteAll(turnoverData);
-        filteredDataRepository.deleteAll(generatedData);
-        fileDetailRepository.deleteById(fileId);
+        // Удаление файла из таблицы file_detail
+        fileDetailDeletionRepository.deleteById(fileId);
     }
 }
